@@ -180,7 +180,7 @@ def visualize_fft_results(fft_data, title="FFT Result", inset_range=None, figsiz
 # %%
 # %%
 # 完整流程复现（以AAPL数据为例）
-file_path = 'AAPL_2024.csv'
+file_path = 'SP500.csv'
 stock_data = pd.read_csv(file_path)
 close_prices = stock_data['close'].values
 dates = pd.to_datetime(stock_data['date'])  # 确保日期数据为datetime类型
