@@ -79,6 +79,7 @@ def apply_threshold(fft_data, epsilon,use_shift=True):
         'fft_result': filtered_fft_result
     }
 
+
 # %%
 #step4：逆FFT变换恢复时间域
 def inverse_fft(fft_filtered_data):
@@ -97,9 +98,9 @@ def remove_padding(denoised_padded, original_length, m):
 
 # %%
 #step1可视化-折线图
-def plot_data(data, title='Title', xlabel='X-axis', ylabel='Y-axis', label='Data'):
+def plot_data(data, dates,title='Title', xlabel='Year', ylabel='Y-axis', label='Data'):
     plt.figure(figsize=(5, 4))
-    plt.plot(data, color='blue', label=label)
+    plt.plot(dates,data, color='blue', label=label)
     plt.title(title)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -108,70 +109,28 @@ def plot_data(data, title='Title', xlabel='X-axis', ylabel='Y-axis', label='Data
 
 # %%
 #step2可视化-折线图2
-def plot_padded_data(new_data, m, stock_data, dates=None):
+def plot_padded_data(new_data, m, stock_data,dates):
     # 分离填充和原始数据
     padding_front = new_data[:m]
     original_data = new_data[m:m + len(stock_data)]
     padding_back = new_data[m + len(stock_data):]
 
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(5, 4))
 
-    # 如果提供了日期数据，使用日期作为x轴；否则使用索引
-    if dates is not None and not dates.empty:
-        # 确保dates是DatetimeIndex类型
-        if not isinstance(dates.index, pd.DatetimeIndex):
-            try:
-                dates = pd.to_datetime(dates)
-            except:
-                print("警告: 无法将日期转换为datetime类型，将使用索引作为x轴。")
-                dates = None
-        
-        if dates is not None:
-            # 创建完整的日期范围，包括填充部分
-            date_range = pd.date_range(start=dates.iloc[0] - pd.Timedelta(days=m), 
-                                      periods=len(new_data), freq='D')
-            
-            # 绘制前端填充数据
-            plt.plot(date_range[:m], padding_front, color='red', label='Front Padding')
-            
-            # 绘制原始数据
-            plt.plot(date_range[m:m+len(stock_data)], original_data, color='blue', label='Original Data')
-            
-            # 绘制后端填充数据
-            plt.plot(date_range[m+len(stock_data):], padding_back, color='red', label='Back Padding')
-            
-            plt.xlabel('Date')
-        else:
-            # 绘制前端填充数据
-            plt.plot(range(m), padding_front, color='red', label='Front Padding')
-            
-            # 绘制原始数据
-            plt.plot(range(m, m + len(original_data)), original_data, color='blue', label='Original Data')
-            
-            # 绘制后端填充数据
-            plt.plot(range(m + len(original_data), len(new_data)), padding_back, color='red', label='Back Padding')
-            
-            plt.xlabel('Index')
-    else:
-        # 绘制前端填充数据
-        plt.plot(range(m), padding_front, color='red', label='Front Padding')
-        
-        # 绘制原始数据
-        plt.plot(range(m, m + len(original_data)), original_data, color='blue', label='Original Data')
-        
-        # 绘制后端填充数据
-        plt.plot(range(m + len(original_data), len(new_data)), padding_back, color='red', label='Back Padding')
-        
-        plt.xlabel('Index')
+# 忽略 dates，直接绘制（用默认 index）
+    plt.plot(range(m), padding_front, color='red', label='Front Padding')
+    plt.plot(range(m, m + len(original_data)), original_data, color='blue', label='Original Data')
+    plt.plot(range(m + len(original_data), len(new_data)), padding_back, color='red', label='Back Padding')
 
-    # 设置标题和坐标轴标签
-    plt.title('Stock Data with Padding')
+# 不显示横坐标刻度
+    plt.xticks([])  # 清除x轴刻度
+    plt.xlabel('')  # 可选：移除x轴标签文字
     plt.ylabel('Value')
+    plt.title('Stock Data with Padding')
 
-    # 添加图例
     plt.legend()
-
-    # 显示图形
+    plt.tight_layout()
+    plt.gca().invert_xaxis()
     plt.show()
 
 # %%
@@ -217,12 +176,14 @@ def visualize_fft_results(fft_data, title="FFT Result", inset_range=None, figsiz
     plt.tight_layout()
     plt.show()
 
+
+# %%
 # %%
 # 完整流程复现（以AAPL数据为例）
 file_path = 'AAPL_2024.csv'
 stock_data = pd.read_csv(file_path)
 close_prices = stock_data['close'].values
-dates = stock_data['date']  # 假设CSV文件中有一个'date'列
+dates = pd.to_datetime(stock_data['date'])  # 确保日期数据为datetime类型
 
 N = len(close_prices)
 m = 40  # 填充区域大小
@@ -246,11 +207,14 @@ denoised_padded = inverse_fft(filtered_fft_data)
 # 步骤5：移除填充区域
 denoised_data = remove_padding(denoised_padded, N, m)
 
+
 # 可视化1原始数据
-plot_data(close_prices, title='Stock Data', xlabel='Time', ylabel='Value', label='Original Data')
+plot_data(close_prices, dates, title='Stock Data', xlabel='Date', ylabel='Value', label='Original Data')
 
 # 可视化2填充后的数据
 plot_padded_data(new_data, m, close_prices, dates)
+
+
 
 # 可视化3：FFT频谱
 visualize_fft_results(
@@ -260,36 +224,39 @@ visualize_fft_results(
   ylim=(0,70000)
 )
 
-# 可视化4：过滤后的频谱
+#可视化4：过滤后的频谱
 visualize_fft_results(
   filtered_fft_data ,
-  title="Filtered FFT Spectrum",
+  title=" Filtered FFT Spectrum",
   inset_range=(0, 0.4, 0, 300),
   ylim=(0,70000)
 )
 
-# 可视化5：过滤后的时域
+# # 可视化5：过滤后的时域
+# plt.figure(figsize=(10, 5))
+# date_range = pd.date_range(start=dates.iloc[0] - pd.Timedelta(days=m), periods=len(new_data), freq='D')
+# # 绘制填充后的原始数据（蓝色）
+# plt.plot(date_range, new_data, 'b-', alpha=0.6, label='Padded Original Data')
+# # 绘制去噪后的填充数据（红色），修正了格式化问题
+# plt.plot(date_range, denoised_padded, 'r-', label=f'Denoised Padded Data (epsilon={epsilon})')
+# plt.title('Padded Data Comparison')
+# plt.xlabel('Date')
+# plt.ylabel('Price')
+# plt.legend()
+# plt.grid(True, alpha=0.3)
+# plt.show()
+
+# 可视化6：去掉之前的填充部分
 plt.figure(figsize=(10, 5))
-# 绘制填充后的原始数据（蓝色）
-plt.plot(new_data, 'b-', alpha=0.6, label='Padded Original Data')
-# 绘制去噪后的填充数据（红色），修正了格式化问题
-plt.plot(denoised_padded, 'r-', label=f'Denoised Padded Data (epsilon={epsilon})')
-plt.title('Padded Data Comparison')
-plt.xlabel('Time Index')
+# 绘制原始数据（蓝色）
+plt.plot(dates, close_prices, 'b-', alpha=0.6, label='Original Data')
+# 绘制最终去噪数据（红色），修正了格式化问题
+plt.plot(dates, denoised_data, 'r-', label=f'Final Denoised Data (epsilon={epsilon})')
+plt.title('Original vs Final Denoised Data')
+plt.xlabel('Date')
 plt.ylabel('Price')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.show()
 
-# 可视化6：去掉之前的填充部分
-plt.figure(figsize=(10, 5))
-# 绘制原始数据（蓝色）
-plt.plot(close_prices, 'b-', alpha=0.6, label='Original Data')
-# 绘制最终去噪数据（红色），修正了格式化问题
-plt.plot(denoised_data, 'r-', label=f'Final Denoised Data (epsilon={epsilon})')
-plt.title('Original vs Final Denoised Data')
-plt.xlabel('Time Index')  # 修正为Time Index，因为没有实际年份数据
-plt.ylabel('Price')
-plt.legend()
-plt.grid(True, alpha=0.3)
-plt.show()
+
