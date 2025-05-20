@@ -111,3 +111,6 @@ mae_denoised, rmse_denoised, y_true_denoised, y_pred_denoised = evaluate_model(m
 
 print(f"原始数据 - MAE: {mae_raw:.4f}, RMSE: {rmse_raw:.4f}")
 print(f"去噪数据 - MAE: {mae_denoised:.4f}, RMSE: {rmse_denoised:.4f}")
+
+# ԭʼ���� - MAE: 7.4091, RMSE: 10.3192
+# ȥ������ - MAE: 7.1851, RMSE: 8.8408
